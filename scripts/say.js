@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /*
- * 펫 상태를 직접 밀어넣는 테스트용 CLI.
+ * Push a pet state directly (handy for testing or for CI/build scripts).
  *   node scripts/say.js coding 42 "테스트 실행 중"
  *   node scripts/say.js done 100 "빌드 성공!"
- *   모드: idle | thinking | coding | waiting | done | error
+ *   modes: idle | thinking | coding | waiting | done | error
  */
 const http = require('http');
 const fs = require('fs');
@@ -35,7 +35,7 @@ const req = http.request(
   }
 );
 req.on('error', (e) => {
-  console.error(`✗ 펫에 연결할 수 없습니다 (127.0.0.1:${port}). 앱이 실행 중인지 확인하세요.`);
+  console.error(`✗ Cannot reach the pet at 127.0.0.1:${port} — is the app running?`);
   console.error(`  ${e.message}`);
   process.exit(1);
 });

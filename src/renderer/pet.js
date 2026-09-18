@@ -2,6 +2,8 @@
 (() => {
   const S = window.SPRITES;
   let chr = S.get('blob');
+  let lang = 'en';
+  const T = (k, v) => window.I18N.t(lang, k, v);
   const CELL = 7;
 
   const canvas = document.getElementById('pet');
@@ -69,15 +71,15 @@
     usageEl.classList.toggle('show', used > 0);
     if (used) {
       const pct = Math.min(100, Math.round((used / (state.ctxMax || 200000)) * 100));
-      gauge(usageFill, usageText, pct, 'CTX ' + pct + '% · ' + kilo(used));
+      gauge(usageFill, usageText, pct, T('ctx') + ' ' + pct + '% · ' + kilo(used));
     }
 
     const p = state.plan;
     planEl.classList.toggle('show', !!p);
     if (p) {
-      gauge(plan5Fill, plan5Text, p.fiveHour || 0, '5H ' + (p.fiveHour || 0) + '%');
-      gauge(planwFill, planwText, p.weekly || 0, '주 ' + (p.weekly || 0) + '%');
-      planEl.title = p.resetsIn ? '5시간 한도 리셋까지 ' + p.resetsIn : '';
+      gauge(plan5Fill, plan5Text, p.fiveHour || 0, T('fiveHour') + ' ' + (p.fiveHour || 0) + '%');
+      gauge(planwFill, planwText, p.weekly || 0, T('weekly') + ' ' + (p.weekly || 0) + '%');
+      planEl.title = p.resetsIn ? T('resetsIn', { v: p.resetsIn }) : '';
       updateAge();
     }
   }
@@ -235,6 +237,7 @@
   // 브라우저에서 열었을 때(개발용) 상태를 직접 넣어볼 수 있게 한다
   window.__setPetState = apply;
   window.__setPetCharacter = (name) => { chr = S.get(name); };
+  window.__setPetLang = (v) => { lang = window.I18N.pick(v); updateUsage(); };
 
   // ── 메인 프로세스 연동 ─────────────────────
   const bridge = window.claudePet;
@@ -242,6 +245,7 @@
     bridge.onState(apply);
     bridge.onScale((v) => { stage.style.transform = 'scale(' + v + ')'; });
     bridge.onCharacter((name) => { chr = S.get(name); });
+    bridge.onLang((v) => { lang = window.I18N.pick(v); updateUsage(); });
     bridge.get().then((s) => { if (s) apply(s); }).catch(() => {});
   }
 

@@ -6,10 +6,11 @@ const { startServer, DEFAULT_PORT } = require('./server');
 const { createStore } = require('./state');
 const { makeIconPNG } = require('./icon');
 const { CHARACTERS } = require('./sprites');
+const { t, fromLocale } = require('./i18n');
 
 const WIN_W = 320;
 const WIN_H = 320;
-const SCALES = [['작게', 0.75], ['보통', 1], ['크게', 1.3], ['아주 크게', 1.6]];
+const SCALES = [['sizeS', 0.75], ['sizeM', 1], ['sizeL', 1.3], ['sizeXL', 1.6]];
 
 let win = null;
 let tray = null;
@@ -34,6 +35,19 @@ function saveSettings(patch) {
     fs.writeFileSync(settingsPath(), JSON.stringify(next, null, 2));
   } catch { /* 설정 저장 실패는 치명적이지 않다 */ }
   return next;
+}
+
+function currentLang() {
+  return loadSettings().language || fromLocale(app.getLocale());
+}
+
+const T = (key, vars) => t(currentLang(), key, vars);
+
+function setLanguage(lang) {
+  saveSettings({ language: lang });
+  if (win && !win.isDestroyed()) win.webContents.send('pet:lang', lang);
+  if (store) store.relabel();
+  refreshTrayMenu();
 }
 
 function defaultPosition() {
@@ -92,6 +106,7 @@ function createWindow() {
     if (store) win.webContents.send('pet:state', store.get());
     win.webContents.send('pet:scale', scale);
     win.webContents.send('pet:character', s.character || 'blob');
+    win.webContents.send('pet:lang', currentLang());
     win.webContents.send('pet:info', { port: activePort });
   });
 
@@ -157,11 +172,11 @@ function buildTray() {
 function refreshTrayMenu() {
   const s = loadSettings();
   const menu = Menu.buildFromTemplate([
-    { label: `Claude Pet — 포트 ${activePort || '연결 안 됨'}`, enabled: false },
+    { label: activePort ? T('trayPort', { port: activePort }) : T('trayNoPort'), enabled: false },
     { type: 'separator' },
-    { label: '보이기 / 숨기기', click: () => toggleWindow() },
+    { label: T('showHide'), click: () => toggleWindow() },
     {
-      label: '항상 위에',
+      label: T('alwaysOnTop'),
       type: 'checkbox',
       checked: s.alwaysOnTop !== false,
       click: (item) => {
@@ -170,35 +185,44 @@ function refreshTrayMenu() {
       },
     },
     {
-      label: '클릭 통과 (마우스 무시)',
+      label: T('clickThrough'),
       type: 'checkbox',
       checked: !!s.clickThrough,
       click: (item) => setClickThrough(item.checked),
     },
     {
-      label: '캐릭터',
-      submenu: Object.entries(CHARACTERS).map(([key, c]) => ({
-        label: c.label,
+      label: T('character'),
+      submenu: Object.keys(CHARACTERS).map((key) => ({
+        label: T(key),
         type: 'radio',
         checked: (s.character || 'blob') === key,
         click: () => setCharacter(key),
       })),
     },
     {
-      label: '크기',
-      submenu: SCALES.map(([label, v]) => ({
+      label: T('language'),
+      submenu: [['en', 'English'], ['ko', '한국어']].map(([code, label]) => ({
         label,
+        type: 'radio',
+        checked: currentLang() === code,
+        click: () => setLanguage(code),
+      })),
+    },
+    {
+      label: T('size'),
+      submenu: SCALES.map(([key, v]) => ({
+        label: T(key),
         type: 'radio',
         checked: (s.scale || 1) === v,
         click: () => setScale(v),
       })),
     },
-    { label: '위치 초기화', click: () => { const p = defaultPosition(); if (win) win.setPosition(p.x, p.y); saveSettings({ position: p }); } },
+    { label: T('resetPosition'), click: () => { const p = defaultPosition(); if (win) win.setPosition(p.x, p.y); saveSettings({ position: p }); } },
     { type: 'separator' },
-    { label: '데모 재생 (동작 확인)', click: () => runDemo() },
-    { label: '훅 설치 명령 복사', click: () => copyHookCommand() },
+    { label: T('demo'), click: () => runDemo() },
+    { label: T('copyHookCmd'), click: () => copyHookCommand() },
     { type: 'separator' },
-    { label: '종료', click: () => { app.isQuitting = true; app.quit(); } },
+    { label: T('quit'), click: () => { app.isQuitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(menu);
 }
@@ -247,7 +271,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(async () => {
     if (process.platform === 'darwin' && app.dock) app.dock.hide();
 
-    store = createStore(push);
+    store = createStore(push, currentLang);
     const res = await startServer({
       port: DEFAULT_PORT,
       onEvent: (evt) => store.handle(evt),

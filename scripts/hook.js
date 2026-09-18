@@ -78,8 +78,8 @@ if (process.argv.includes('--selftest')) {
     JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 10, cache_read_input_tokens: 1000, cache_creation_input_tokens: 200 }, content: [{ type: 'tool_use', name: 'Bash' }] } }),
   ].join('\n'));
   const r = readTail(tmp);
-  assert.strictEqual(r.ctx, 1210, 'ctx = 마지막 어시스턴트의 input + cache_read + cache_creation');
-  assert.strictEqual(r.text, '첫 응답', '도구 호출만 있는 메시지는 건너뛰고 텍스트를 찾아야 한다');
+  assert.strictEqual(r.ctx, 1210, 'ctx = input + cache_read + cache_creation of the last assistant entry');
+  assert.strictEqual(r.text, '첫 응답', 'skips tool-only messages and keeps looking for text');
   assert.strictEqual(readTail('/없는파일').ctx, null);
   fs.unlinkSync(tmp);
   console.log('✓ hook selftest ok');
@@ -111,10 +111,10 @@ function buildPayload(input) {
     }
 
     case 'notification':
-      return { ...base, message: input.message || '입력을 기다리는 중' };
+      return { ...base, message: input.message || '' };
 
     case 'stop':
-      return { ...base, message: tail.text || '작업 완료!' };
+      return { ...base, message: tail.text || '' };
 
     default:
       return base;

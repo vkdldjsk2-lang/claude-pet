@@ -2,14 +2,17 @@
  * 훅 이벤트를 펫 상태로 환원(reduce)한다.
  * mode: idle | thinking | coding | waiting | done | error
  */
+const { t } = require('./i18n');
 
 const IDLE_AFTER_DONE_MS = 60 * 1000; // 완료 메시지를 들고 있는 시간
 
-function createStore(onChange) {
+function createStore(onChange, getLang = () => 'en') {
+  const T = (key, vars) => t(getLang(), key, vars);
+
   const state = {
     mode: 'idle',
     percent: 0,
-    message: '대기 중',
+    message: T('idle'),
     detail: '',
     tool: '',
     session: '',
@@ -34,11 +37,13 @@ function createStore(onChange) {
     onChange({ ...state });
   }
 
+  function idlePatch() {
+    return { mode: 'idle', percent: 0, message: T('idle'), detail: '', tool: '' };
+  }
+
   function scheduleIdle(ms) {
     clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-      commit({ mode: 'idle', percent: 0, message: '대기 중', detail: '', tool: '' });
-    }, ms);
+    idleTimer = setTimeout(() => commit(idlePatch()), ms);
   }
 
   function cancelIdle() {
@@ -46,17 +51,17 @@ function createStore(onChange) {
     idleTimer = null;
   }
 
-  /** todos 배열 → { percent, label } */
+  /** todos 배열 → { percent, label, done, total } */
   function fromTodos(todos) {
     if (!Array.isArray(todos) || todos.length === 0) return null;
     const total = todos.length;
-    const done = todos.filter((t) => t.status === 'completed').length;
-    const active = todos.find((t) => t.status === 'in_progress');
+    const done = todos.filter((x) => x.status === 'completed').length;
+    const active = todos.find((x) => x.status === 'in_progress');
     // 진행 중 항목은 절반 완료로 셈해서 바가 멈춰 보이지 않게 한다
     const percent = Math.round(((done + (active ? 0.5 : 0)) / total) * 100);
     return {
       percent: Math.min(99, percent),
-      label: active ? active.activeForm || active.content : `${done}/${total} 완료`,
+      label: active ? active.activeForm || active.content : T('tasksDone', { done, total }),
       done,
       total,
     };
@@ -81,7 +86,7 @@ function createStore(onChange) {
         s.tools = 0;
         s.todos = null;
         cancelIdle();
-        commit({ mode: 'idle', percent: 0, message: '세션 시작', detail: '', tool: '', session: id });
+        commit({ ...idlePatch(), message: T('sessionStart'), session: id });
         scheduleIdle(4000);
         break;
 
@@ -92,7 +97,7 @@ function createStore(onChange) {
         commit({
           mode: 'thinking',
           percent: 0,
-          message: evt.prompt ? truncate(evt.prompt, 42) : '생각하는 중',
+          message: evt.prompt ? truncate(evt.prompt, 42) : T('thinking'),
           detail: '',
           tool: '',
           session: id,
@@ -104,12 +109,12 @@ function createStore(onChange) {
         if (evt.event === 'tool_end') s.tools += 1;
         if (evt.todos) s.todos = fromTodos(evt.todos);
         cancelIdle();
-        const t = s.todos;
+        const td = s.todos;
         commit({
           mode: 'coding',
-          percent: t ? t.percent : estimate(s.tools),
-          message: t ? t.label : '작업 중',
-          detail: t ? `${t.done}/${t.total}` : `${s.tools} steps`,
+          percent: td ? td.percent : estimate(s.tools),
+          message: td ? td.label : T('working'),
+          detail: td ? `${td.done}/${td.total}` : T('steps', { n: s.tools }),
           tool: evt.tool || '',
           session: id,
         });
@@ -120,7 +125,7 @@ function createStore(onChange) {
         cancelIdle();
         commit({
           mode: 'waiting',
-          message: truncate(evt.message || '입력을 기다리는 중', 46),
+          message: truncate(evt.message || T('waiting'), 46),
           detail: '',
           session: id,
         });
@@ -131,8 +136,8 @@ function createStore(onChange) {
         commit({
           mode: 'done',
           percent: 100,
-          message: truncate(evt.message || '작업 완료!', 70),
-          detail: s.todos ? `${s.todos.total}개 작업` : '',
+          message: truncate(evt.message || T('done'), 70),
+          detail: s.todos ? T('taskCount', { n: s.todos.total }) : '',
           tool: '',
           session: id,
         });
@@ -141,14 +146,14 @@ function createStore(onChange) {
 
       case 'error':
         cancelIdle();
-        commit({ mode: 'error', message: truncate(evt.message || '오류 발생', 60), session: id });
+        commit({ mode: 'error', message: truncate(evt.message || T('error'), 60), session: id });
         scheduleIdle(20000);
         break;
 
       case 'session_end':
         sessions.delete(id);
         cancelIdle();
-        commit({ mode: 'idle', percent: 0, message: '대기 중', detail: '', tool: '', session: '', ctx: 0 });
+        commit({ ...idlePatch(), session: '', ctx: 0 });
         break;
 
       // 사용량만 갱신 (위에서 이미 반영했으니 그대로 내보내기만 한다)
@@ -174,8 +179,15 @@ function createStore(onChange) {
     return true;
   }
 
+  /** 언어가 바뀌면 기본 문구를 새 언어로 다시 그린다 */
+  function relabel() {
+    if (state.mode === 'idle') commit(idlePatch());
+    else commit({});
+  }
+
   return {
     handle,
+    relabel,
     get: () => ({ ...state }),
   };
 }

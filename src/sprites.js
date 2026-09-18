@@ -114,17 +114,14 @@
 
   const CHARACTERS = {
     blob: {
-      label: '블롭',
       BODY: BLOB, BLINK: blobBlink, UP: blobUp, HAPPY: blobHappy,
       PAW: ['.OO.', 'OBBO', 'ObbO', '.OO.'],
     },
     cat: {
-      label: '고양이',
       BODY: CAT, BLINK: catBlink, UP: catUp, HAPPY: catHappy,
       PAW: ['.OO.', 'OCCO', 'OwwO', '.OO.'],
     },
     penguin: {
-      label: '펭귄',
       BODY: PENGUIN, BLINK: pgBlink, UP: pgUp, HAPPY: pgHappy,
       // 든 자세에서도 보이도록 날개 윗면은 흰 배 색을 쓴다
       PAW: ['.OO.', 'OwwO', 'OKKO', '.OO.'],

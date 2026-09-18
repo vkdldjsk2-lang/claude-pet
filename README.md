@@ -1,169 +1,191 @@
+<div align="center">
+
 # Claude Pet 🐾
 
-Claude Code 의 작업 상태를 따라 움직이는 데스크톱 펫. Windows / macOS 공용 Electron 앱.
+**A desktop pet that follows what Claude Code is doing.**
 
-- **머리 위 도트 진행률** — 10개 도트 + 퍼센트. `TodoWrite` 의 todo 목록에서 실제 진행률을 계산한다 (todo 가 없으면 도구 호출 수로 추정).
-- **코딩 중엔 노트북을 두들긴다** — 앞발이 엇갈리며 타이핑, 노트북 로고가 깜빡인다.
-- **완료되면 메시지를 머리 위로 들어올린다** — Claude 의 마지막 응답 첫 줄을 판에 띄우고, 판이 민트색으로 맥동하며 빛난다.
-- **사용량 표시** — 펫 아래 게이지 두 줄. `CTX 19% · 193k` (컨텍스트) / `5H 34% · 주 5% · 12분 전` (요금제 한도). 65%부터 노랑, 85%부터 빨강.
-- **캐릭터 · 크기 선택** — 블롭/고양이/펭귄, ×0.75~×1.6. 트레이 메뉴에서 바꾸고 설정은 저장된다.
-- 배경 투명 · 항상 위 · 드래그로 위치 이동 · 트레이 상주.
+Dot progress above its head, typing on a laptop while tools run,
+and a glowing sign held up when the answer lands.
 
-## 상태
+<img src="docs/demo.gif" alt="Claude Pet demo — thinking, typing, then holding up the result" width="320">
 
-| 모드 | 언제 | 모습 |
+Windows · macOS · [한국어](README.ko.md)
+
+</div>
+
+---
+
+## What it shows
+
+| | |
+|---|---|
+| <img src="docs/state-coding.png" width="200"> | **Real progress, not a spinner.** The dots come from your `TodoWrite` list — completed / total, with the in-progress item counted as half so the bar never looks stuck. No todos? It estimates from tool-call count. The label under the pet is the tool running right now. |
+| <img src="docs/state-done.png" width="240"> | **The result, held up and glowing.** On `Stop` the pet reads the first line of Claude's last message straight out of the transcript and holds it over its head. |
+| <img src="docs/state-waiting.png" width="220"> | **Amber when Claude needs you.** A permission prompt or any `Notification` puts the pet in waiting mode, so you notice from across the desk. |
+
+Under the pet: **context usage** (`CTX 19% · 193k`) and **plan limits** (`5H 34% · WK 5%`). Mint under 65%, amber to 85%, red past that.
+
+## States
+
+| Mode | When | Looks like |
 |---|---|---|
-| `idle` | 대기 | 느린 호흡, 안테나 희미하게 깜빡 |
-| `thinking` | 프롬프트 입력 직후 | 위를 올려다봄, 안테나 빠르게 맥동 |
-| `coding` | 도구 실행 중 | 노트북 타이핑 + 도트 진행률 + 도구 이름 |
-| `waiting` | 권한/입력 대기 (Notification) | 판을 들고 노란색 발광 `?` |
-| `done` | 응답 완료 (Stop) | 웃는 얼굴, 100%, 민트색 발광 메시지 판 + 반짝임 |
-| `error` | 수동 이벤트 | 빨간색 발광 판 |
+| `idle` | nothing running | slow breathing, status light dim |
+| `thinking` | right after you hit enter | looks up, light pulses fast |
+| `coding` | a tool is running | types on the laptop, dots + tool name |
+| `waiting` | permission / input needed (`Notification`) | holds an amber `?` sign |
+| `done` | response finished (`Stop`) | happy face, 100%, glowing mint sign |
+| `error` | pushed manually | red glowing sign |
 
-## 설치
+## Characters
+
+<div align="center">
+<img src="docs/char-blob.png" width="140"> <img src="docs/char-cat.png" width="140"> <img src="docs/char-penguin.png" width="140">
+</div>
+
+Tray menu → **Character**. Size (×0.75–×1.6) and language (English / 한국어) live there too; language follows your OS locale by default. Everything is saved.
+
+## Install
 
 ```bash
 git clone https://github.com/vkdldjsk2-lang/claude-pet.git
 cd claude-pet
 npm install
-```
-
-> Windows 에서 `Electron failed to install correctly` 가 뜨면 바이너리 압축 해제가 중간에 끊긴 것이다.
-> `node_modules/electron/dist` 를 지우고 `node node_modules/electron/install.js` 를 다시 실행하면 된다.
-
-## 실행
-
-```bash
 npm start
 ```
 
-동작을 먼저 눈으로 보고 싶으면 데모 모드로 실행한다 (프롬프트 → 코딩 → 완료 시퀀스를 자동 재생).
+Want to see it move before wiring anything up:
 
 ```bash
 npm run demo
 ```
 
-앱은 트레이(Windows 알림 영역 / macOS 메뉴바)에 상주한다. 트레이 아이콘을 누르면 보이기/숨기기, 우클릭 메뉴에서 항상 위·클릭 통과·위치 초기화·종료를 고를 수 있다. 펫 자체를 드래그해 원하는 자리에 두면 위치가 저장된다.
+> **Windows:** if you get `Electron failed to install correctly`, the binary unzip was cut short. Delete `node_modules/electron/dist` and run `node node_modules/electron/install.js` again.
 
-## Claude Code 와 연결
+The app lives in the tray (Windows notification area / macOS menu bar). Click the icon to show or hide it; right-click for always-on-top, click-through, character, size, language and quit. Drag the pet anywhere — the position sticks.
 
-펫은 `127.0.0.1:4577` 에서 이벤트를 기다린다. 훅을 설치하면 Claude Code 가 상태를 밀어준다.
+## Connect it to Claude Code
+
+The pet listens on `127.0.0.1:4577`. Install the hooks and Claude Code pushes its state:
 
 ```bash
 npm run install-hooks
 ```
 
-`~/.claude/settings.json` 에 아래 7개 훅이 추가된다 (기존 설정은 `.claude-pet.bak` 로 백업되고, 다른 훅은 건드리지 않는다).
+This adds seven hooks to `~/.claude/settings.json`. Your existing file is backed up to `settings.json.claude-pet.bak`, and other hooks are left alone.
 
-| Claude Code 훅 | 펫 이벤트 |
+| Claude Code hook | Pet event |
 |---|---|
 | `SessionStart` | `session_start` |
 | `UserPromptSubmit` | `prompt` |
 | `PreToolUse` | `tool_start` |
-| `PostToolUse` | `tool_end` (여기서 `TodoWrite` 의 todos 를 읽어 진행률 계산) |
+| `PostToolUse` | `tool_end` — reads `TodoWrite` todos for the progress bar |
 | `Notification` | `notification` |
-| `Stop` | `stop` (트랜스크립트에서 마지막 응답을 읽어 메시지 판에 표시) |
+| `Stop` | `stop` — reads the last reply from the transcript for the sign |
 | `SessionEnd` | `session_end` |
 
-사용량은 모든 이벤트에 같이 실려 온다. 트랜스크립트 마지막 어시스턴트 메시지의 `usage`(input + cache_read + cache_creation)가 곧 현재 컨텍스트 점유량이다. 한도는 200k 기본, `CLAUDE_PET_CONTEXT_MAX` 로 변경. 훅 파싱이 맞는지는 `node scripts/hook.js --selftest` 로 확인한다.
+Project only: `node scripts/install-hooks.js --project`. Remove: `npm run uninstall-hooks`.
 
-### 요금제 한도(5시간·주간)
+Restart Claude Code and the pet follows along. When the pet isn't running the hooks fail silently, so Claude Code is never blocked.
 
-이 값은 **Claude Code 세션 안에서만** 읽을 수 있다. 훅 페이로드·트랜스크립트·`~/.claude/sessions`·`session-env` 어디에도 없고 (`rateLimits` 문자열은 429 에러 메시지일 뿐), `claude` CLI 에도 해당 서브커맨드가 없다. 자동 폴링 경로가 없어서 push 전용이다.
+### Context usage
 
-```bash
-node scripts/plan.js 34 5 "2h 41m" 1000000   # 5시간% 주간% 리셋까지 컨텍스트윈도우
-```
+Every hook event carries it. The `usage` on the last assistant message in the transcript (`input + cache_read + cache_creation`) is what's filling your context window right now. Default ceiling is 200k — set `CLAUDE_PET_CONTEXT_MAX`, or push the real one (below). Check the parser with `node scripts/hook.js --selftest`.
 
-데스크톱 앱의 usage 카드(또는 세션 안에서 `get_usage`)에 뜨는 값을 그대로 넣으면 된다. 컨텍스트 윈도우도 같이 밀어넣으면 이후 훅 이벤트가 덮어쓰지 않는다 — `CLAUDE_PET_CONTEXT_MAX` 를 명시하지 않는 한 훅은 한도를 보내지 않는다. 기본값은 200k.
+### Plan limits (5-hour / weekly)
 
-값이 묵으면 옆에 `12분 전` 이 붙고, 30분이 넘으면 노란색으로 바뀐다. 오래된 숫자를 최신인 줄 알고 보는 일이 없게 하려는 것이다.
-
-누적 토큰·비용은 전체 트랜스크립트 스캔이 필요해 지금은 뺐다.
-
-현재 프로젝트에만 적용하려면 `node scripts/install-hooks.js --project`, 제거는 `npm run uninstall-hooks`.
-
-설치 후 Claude Code 를 새로 실행하면 적용된다. 펫이 꺼져 있어도 훅은 조용히 통과하므로 Claude Code 동작에 영향을 주지 않는다.
-
-## 캐릭터 바꾸기
-
-트레이 우클릭 → **캐릭터** 에서 블롭 / 고양이 / 펭귄. 트레이 아이콘도 같이 바뀌고 설정은 저장된다.
-
-캐릭터를 추가하려면 `src/sprites.js` 의 `CHARACTERS` 에 한 벌 더 넣으면 된다. 노트북·앞발 위치·애니메이션은 전부 공유하므로 그릴 것만 그리면 된다.
-
-```js
-const CHARACTERS = {
-  blob:    { label: '블롭', BODY, BLINK, UP, HAPPY, PAW },
-  cat:     { label: '고양이', ... },
-  penguin: { label: '펭귄', ... },
-};
-```
-
-- `BODY` 21 x 13, 문자 1개 = 도트 1개, 색은 `PALETTE` 가 정한다
-- `BLINK`(눈 감음) / `UP`(위 봄) / `HAPPY`(완료) 는 `BODY.slice()` 후 눈 행만 교체하면 된다
-- 0행 10열의 `A` 는 상태등이다. 렌더러가 이 칸에 발광을 얹으므로 위치를 옮기지 말 것
-- `PAW` 는 든 자세에서 어두운 배경 위에 올라가므로 너무 어둡게 칠하지 말 것
-
-행 폭·미등록 색 문자는 이걸로 확인한다:
+**These can only be read from inside a Claude Code session.** They are not in the hook payload, not in the transcript, not in `~/.claude/sessions` or `session-env` — the `rateLimits` string you'll find in there is only a 429 error message — and there is no `claude` CLI subcommand for them. So there's no polling path; the pet takes them by push:
 
 ```bash
-node -e "const S=require('./src/sprites');for(const[n,c]of Object.entries(S.CHARACTERS))for(const k of['BODY','BLINK','UP','HAPPY'])c[k].forEach((r,i)=>{if(r.length!==S.GRID_W)throw Error(n+'.'+k+' '+i)});console.log('ok')"
+node scripts/plan.js 34 5 "2h 41m" 1000000   # 5h% weekly% resetsIn contextWindow
 ```
 
-## 크기 조절
+Use whatever the desktop app's usage card (or `get_usage` inside a session) shows. Push the context window along with it and hook events won't overwrite it.
 
-트레이 우클릭 → **크기** 에서 작게(×0.75) / 보통 / 크게(×1.3) / 아주 크게(×1.6). 창과 내용이 같이 커지고 아래쪽 가운데를 기준으로 확대되므로 펫 발밑 위치는 그대로다. 설정은 저장된다.
+Because that number goes stale, the pet shows its age beside it (`12m ago`) and turns amber past 30 minutes. A visibly old number beats a fresh-looking wrong one.
 
-## 직접 상태 밀어넣기
+Cumulative tokens and cost are left out — they'd need a full transcript scan.
 
-다른 도구(CI, 빌드 스크립트 등)에서도 쓸 수 있다.
+## Push state from anything
+
+Useful from CI, build scripts, or any long-running job:
 
 ```bash
-node scripts/say.js coding 42 "테스트 실행 중"
-node scripts/say.js done 100 "빌드 성공!"
+node scripts/say.js coding 42 "Running tests"
+node scripts/say.js done 100 "Deploy finished"
 ```
-
-또는 HTTP 로 직접:
 
 ```bash
 curl -X POST http://127.0.0.1:4577/event -H "Content-Type: application/json" \
-  -d '{"event":"set","mode":"done","percent":100,"message":"배포 완료"}'
+  -d '{"event":"set","mode":"done","percent":100,"message":"Deploy finished"}'
 ```
 
-`GET /health` 로 현재 상태를 확인할 수 있다. 포트는 `CLAUDE_PET_PORT` 로 바꿀 수 있고, 실제 사용 포트는 `~/.claude-pet/port` 에 기록된다 (4577 이 사용 중이면 자동으로 다음 포트를 잡는다).
+`GET /health` returns the current state. Change the port with `CLAUDE_PET_PORT`; the port actually in use is written to `~/.claude-pet/port` (if 4577 is taken it walks up).
 
-## 모양 고치기
+## Draw your own character
 
-픽셀 아트는 전부 `src/sprites.js` 안의 문자열이다. 문자 1개 = 도트 1개, `PALETTE` 가 문자 → 색을 정한다. 눈·입·노트북·앞발 위치를 그 파일에서 바로 고칠 수 있다.
+Every sprite is a string in [`src/sprites.js`](src/sprites.js) — one character is one dot, and `PALETTE` maps characters to colors. Add an entry to `CHARACTERS` and you're done: the laptop, paws, animation, glow and typing are all shared.
 
-브라우저에서 바로 확인하려면:
+```js
+const CHARACTERS = {
+  blob:    { BODY, BLINK, UP, HAPPY, PAW },
+  cat:     { ... },
+  penguin: { ... },
+};
+```
+
+- `BODY` is 21 x 13
+- `BLINK` (eyes shut) / `UP` (looking up) / `HAPPY` (done) are `BODY.slice()` with the eye rows swapped
+- `A` at row 0, column 10 is the status light — the renderer paints glow on that cell, so don't move it
+- `PAW` sits against a dark background when raised, so don't make it too dark
+
+Preview in a browser, no Electron needed:
 
 ```bash
 node dev/serve.js
 ```
 
-`http://localhost:5188` 에서 상태 버튼으로 모든 모드를 눌러볼 수 있다.
+`http://localhost:5188` has buttons for every state, character and size.
 
-## 배포용 빌드
+Row widths and unknown palette characters — one cell off shifts the whole face, and it's hard to spot by eye:
 
 ```bash
-npm run dist:win   # NSIS 설치본 + 포터블 exe
+node -e "const S=require('./src/sprites');for(const[n,c]of Object.entries(S.CHARACTERS))for(const k of['BODY','BLINK','UP','HAPPY'])c[k].forEach((r,i)=>{if(r.length!==S.GRID_W)throw Error(n+'.'+k+' '+i)});console.log('ok')"
+```
+
+## Translate it
+
+[`src/i18n.js`](src/i18n.js) holds every string as `{ en: {...}, ko: {...} }`. Add a language there, add it to the tray submenu in `src/main.js`, done. Keys have to match across languages:
+
+```bash
+node -e "const I=require('./src/i18n'),a=require('assert');a.deepStrictEqual(Object.keys(I.STRINGS.en).sort(),Object.keys(I.STRINGS.ko).sort());console.log('ok')"
+```
+
+## Build installers
+
+```bash
+npm run dist:win   # NSIS installer + portable exe
 npm run dist:mac   # dmg + zip
 ```
 
-## 구조
+## Layout
 
 ```
-src/main.js              Electron 메인 — 창/트레이/설정/데모
-src/server.js            127.0.0.1 이벤트 수신 서버
-src/state.js             훅 이벤트 → 펫 상태 환원 (진행률 계산 포함)
-src/sprites.js           픽셀 스프라이트(캐릭터별) + 팔레트 + 레이아웃
-src/icon.js              의존성 없는 PNG 인코더 (트레이 아이콘 런타임 생성)
+src/main.js              Electron main - window, tray, settings, demo
+src/server.js            127.0.0.1 event receiver
+src/state.js             hook events -> pet state (progress math lives here)
+src/sprites.js           pixel sprites per character + palette + layout
+src/i18n.js              all UI strings
+src/icon.js              dependency-free PNG encoder (tray icon, built at runtime)
 src/preload.js           contextBridge (window.claudePet)
-src/renderer/            캔버스 렌더링 + 도트 진행률 + 발광 메시지 판
-scripts/hook.js          Claude Code 훅 → 펫 브리지
-scripts/install-hooks.js 훅 설치/제거
-scripts/say.js           수동 상태 주입 CLI
-scripts/plan.js          요금제 한도 사용량 주입 CLI
-dev/preview.html         브라우저 미리보기
+src/renderer/            canvas rendering, dot progress, glowing sign, gauges
+scripts/hook.js          Claude Code hook -> pet bridge
+scripts/install-hooks.js hook install / remove
+scripts/say.js           push a state by hand
+scripts/plan.js          push plan-limit usage
+dev/preview.html         browser preview
+dev/shots.js             regenerates the README images (Electron + ffmpeg)
 ```
+
+## License
+
+MIT

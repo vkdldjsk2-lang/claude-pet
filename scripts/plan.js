@@ -15,7 +15,7 @@ const path = require('path');
 
 const [five, weekly, resetsIn = '', ctxMax = ''] = process.argv.slice(2);
 if (five === undefined || weekly === undefined) {
-  console.error('사용법: node scripts/plan.js <5시간%> <주간%> [리셋까지] [컨텍스트윈도우]');
+  console.error('usage: node scripts/plan.js <5h%> <weekly%> [resetsIn] [contextWindow]');
   process.exit(2);
 }
 
@@ -34,7 +34,7 @@ const body = JSON.stringify({
 const req = http.request(
   { host: '127.0.0.1', port, path: '/event', method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } },
-  (res) => { res.resume(); console.log(res.statusCode === 200 ? `✓ 5H ${five}% · 주 ${weekly}%` : `✗ HTTP ${res.statusCode}`); }
+  (res) => { res.resume(); console.log(res.statusCode === 200 ? `✓ 5H ${five}% · WK ${weekly}%` : `✗ HTTP ${res.statusCode}`); }
 );
-req.on('error', (e) => { console.error(`✗ 펫에 연결 실패 (127.0.0.1:${port}): ${e.message}`); process.exit(1); });
+req.on('error', (e) => { console.error(`✗ Cannot reach the pet at 127.0.0.1:${port}: ${e.message}`); process.exit(1); });
 req.end(body);

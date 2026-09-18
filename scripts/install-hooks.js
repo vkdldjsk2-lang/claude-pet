@@ -42,7 +42,7 @@ function read() {
     return JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
   } catch (e) {
     if (e.code === 'ENOENT') return {};
-    console.error(`✗ ${settingsFile} 를 읽을 수 없습니다 (JSON 형식 오류일 수 있음): ${e.message}`);
+    console.error(`✗ Cannot read ${settingsFile} (malformed JSON?): ${e.message}`);
     process.exit(1);
   }
 }
@@ -73,10 +73,10 @@ if (fs.existsSync(settingsFile)) {
 }
 fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n', 'utf8');
 
-console.log(`${REMOVE ? '✓ 제거 완료' : '✓ 설치 완료'}: ${settingsFile}`);
+console.log(`${REMOVE ? '✓ removed from' : '✓ installed into'} ${settingsFile}`);
 if (fs.existsSync(`${settingsFile}.claude-pet.bak`)) {
-  console.log(`  백업: ${settingsFile}.claude-pet.bak`);
+  console.log(`  backup: ${settingsFile}.claude-pet.bak`);
 }
 if (!REMOVE) {
-  console.log('  Claude Code 를 새로 실행하면 펫이 상태를 따라갑니다.');
+  console.log('  Restart Claude Code and the pet will follow along.');
 }

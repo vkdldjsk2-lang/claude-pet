@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('claudePet', {
   onClickThrough: (cb) => ipcRenderer.on('pet:click-through', (_e, v) => cb(v)),
   onScale: (cb) => ipcRenderer.on('pet:scale', (_e, v) => cb(v)),
   onCharacter: (cb) => ipcRenderer.on('pet:character', (_e, v) => cb(v)),
+  onLang: (cb) => ipcRenderer.on('pet:lang', (_e, v) => cb(v)),
   get: () => ipcRenderer.invoke('pet:get'),
   hide: () => ipcRenderer.invoke('pet:hide'),
   menu: () => ipcRenderer.invoke('pet:menu'),
