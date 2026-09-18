@@ -1,0 +1,50 @@
+{
+  "name": "claude-pet",
+  "version": "1.0.0",
+  "description": "Claude Code 데스크톱 펫 - 머리 위 도트 진행률, 코딩 중 타이핑, 완료 시 빛나는 메시지",
+  "main": "src/main.js",
+  "author": "claude-pet",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "demo": "electron . --demo",
+    "install-hooks": "node scripts/install-hooks.js",
+    "uninstall-hooks": "node scripts/install-hooks.js --remove",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.claudepet.app",
+    "productName": "Claude Pet",
+    "files": [
+      "src/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools",
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

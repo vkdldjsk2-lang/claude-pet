@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>Claude Pet</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage" data-mode="idle">
+    <!-- 완료/대기 시 머리 위로 들어올리는 메시지 판 -->
+    <div id="board" class="board" aria-live="polite">
+      <div class="board-inner">
+        <span id="board-icon" class="board-icon">✓</span>
+        <span id="board-text" class="board-text"></span>
+      </div>
+      <div class="board-tail"></div>
+      <span class="spark s1"></span>
+      <span class="spark s2"></span>
+      <span class="spark s3"></span>
+    </div>
+
+    <!-- 머리 위 도트 진행률 -->
+    <div id="meter" class="meter">
+      <div id="dots" class="dots"></div>
+      <div id="pct" class="pct">0%</div>
+    </div>
+
+    <canvas id="pet" width="147" height="161"></canvas>
+    <div id="tool" class="tool"></div>
+    <div id="usage" class="usage">
+      <span class="usage-bar"><i id="usage-fill"></i></span>
+      <span id="usage-text"></span>
+    </div>
+    <div id="plan" class="usage">
+      <span class="usage-bar sm"><i id="plan5-fill"></i></span>
+      <span id="plan5-text"></span>
+      <span class="usage-bar sm"><i id="planw-fill"></i></span>
+      <span id="planw-text"></span>
+      <span id="plan-age" class="age"></span>
+    </div>
+  </div>
+
+  <script src="../sprites.js"></script>
+  <script src="pet.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Claude Pet — 미리보기</title>
+  <link rel="stylesheet" href="../src/renderer/style.css" />
+  <style>
+    body { background: #1b1a19; }
+    .host { position: relative; width: 320px; height: 340px; margin: 30px auto; outline: 1px dashed #333; }
+    .bar { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+           display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; z-index: 10; }
+    .bar button { font: 600 12px/1 system-ui, sans-serif; padding: 7px 11px; border-radius: 6px;
+                  border: 1px solid #4a4441; background: #2a2725; color: #eae4de; cursor: pointer; }
+    .bar button:hover { background: #3a3532; }
+  </style>
+</head>
+<body>
+  <div class="host"><div id="stage" data-mode="idle">
+    <div id="board" class="board">
+      <div class="board-inner">
+        <span id="board-icon" class="board-icon">✓</span>
+        <span id="board-text" class="board-text"></span>
+      </div>
+      <div class="board-tail"></div>
+      <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
+    </div>
+    <div id="meter" class="meter">
+      <div id="dots" class="dots"></div>
+      <div id="pct" class="pct">0%</div>
+    </div>
+    <canvas id="pet" width="147" height="161"></canvas>
+    <div id="tool" class="tool"></div>
+    <div id="usage" class="usage">
+      <span class="usage-bar"><i id="usage-fill"></i></span>
+      <span id="usage-text"></span>
+    </div>
+    <div id="plan" class="usage">
+      <span class="usage-bar sm"><i id="plan5-fill"></i></span>
+      <span id="plan5-text"></span>
+      <span class="usage-bar sm"><i id="planw-fill"></i></span>
+      <span id="planw-text"></span>
+      <span id="plan-age" class="age"></span>
+    </div>
+  </div></div>
+
+  <div class="bar">
+    <button data-m="idle">idle</button>
+    <button data-m="thinking">thinking</button>
+    <button data-m="coding">coding 45%</button>
+    <button data-m="coding2">coding 80%</button>
+    <button data-m="waiting">waiting</button>
+    <button data-m="done">done</button>
+    <button data-m="error">error</button>
+    <button data-s="0.75">×0.75</button>
+    <button data-s="1">×1</button>
+    <button data-s="1.3">×1.3</button>
+    <button data-c="blob">블롭</button>
+    <button data-c="penguin">펭귄</button>
+    <button data-c="cat">고양이</button>
+  </div>
+
+  <script src="../src/sprites.js"></script>
+  <script src="../src/renderer/pet.js"></script>
+  <script>
+    const PRESET = {
+      idle:     { mode: 'idle', percent: 0, message: '대기 중', tool: '', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+      thinking: { mode: 'thinking', percent: 0, message: '생각하는 중', tool: '', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+      coding:   { mode: 'coding', percent: 45, message: '인증 코드 읽는 중', tool: 'Read', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+      coding2:  { mode: 'coding', percent: 80, message: '테스트 실행하는 중', tool: 'Bash', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+      waiting:  { mode: 'waiting', percent: 60, message: '파일을 덮어써도 될까요?', tool: '', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+      done:     { mode: 'done', percent: 100, message: '로그인 세션 만료 버그 수정 완료 — 테스트 12개 통과', tool: '', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+      error:    { mode: 'error', percent: 0, message: '빌드 실패: 타입 오류 3건', tool: '', ctx: 193200, ctxMax: 1000000, plan: { fiveHour: 34, weekly: 5, resetsIn: '2h 41m' } },
+    };
+    document.querySelectorAll('.bar button').forEach((b) => {
+      b.addEventListener('click', () => {
+        if (b.dataset.c) window.__setPetCharacter(b.dataset.c);
+        else if (b.dataset.s) document.getElementById('stage').style.transform = 'scale(' + b.dataset.s + ')';
+        else window.__setPetState(PRESET[b.dataset.m]);
+      });
+    });
+  </script>
+</body>
+</html>
