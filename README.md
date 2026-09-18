@@ -23,7 +23,9 @@ Claude Code 의 작업 상태를 따라 움직이는 데스크톱 펫. Windows /
 ## 설치
 
 ```bash
-cd claude-pet && npm install
+git clone https://github.com/vkdldjsk2-lang/claude-pet.git
+cd claude-pet
+npm install
 ```
 
 > Windows 에서 `Electron failed to install correctly` 가 뜨면 바이너리 압축 해제가 중간에 끊긴 것이다.

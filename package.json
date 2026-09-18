@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Claude Code 데스크톱 펫 - 머리 위 도트 진행률, 코딩 중 타이핑, 완료 시 빛나는 메시지",
   "main": "src/main.js",
-  "author": "claude-pet",
+  "author": "vkdldjsk2-lang",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -46,5 +46,21 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     }
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vkdldjsk2-lang/claude-pet.git"
+  },
+  "homepage": "https://github.com/vkdldjsk2-lang/claude-pet#readme",
+  "bugs": {
+    "url": "https://github.com/vkdldjsk2-lang/claude-pet/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "electron",
+    "desktop-pet",
+    "pixel-art",
+    "tray",
+    "statusline"
+  ]
 }
