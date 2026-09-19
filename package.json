@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "demo": "electron . --demo",
-    "test": "node scripts/hook.js --selftest",
+    "test": "node --test \"test/*.test.js\"",
     "install-hooks": "node scripts/install-hooks.js",
     "uninstall-hooks": "node scripts/install-hooks.js --remove",
     "hook-status": "node scripts/install-hooks.js --status",

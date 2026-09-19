@@ -1,0 +1,32 @@
+name: CI
+
+# 태그를 붙이기 전에 깨진 걸 잡는다. 릴리스 워크플로는 태그에서만 돈다.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 설치 훅은 경로 구분자와 홈 디렉터리 모양을 타므로 양쪽에서 돌린다
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      # 아이콘 생성기가 깨지면 릴리스 때 알게 된다. 여기서 미리 돌려 본다.
+      - run: npm run make-icon

@@ -156,7 +156,7 @@ function apply({ remove = false, project = false } = {}) {
   return { ok: true, file, backup, runtime: rt ? rt.kind : undefined };
 }
 
-module.exports = { apply, status, hookPath, MAP };
+module.exports = { apply, status, hookPath, isOurs, MAP };
 
 // ── CLI ────────────────────────────────────────────────────────────────────
 if (require.main === module) {

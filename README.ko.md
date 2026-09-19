@@ -162,19 +162,28 @@ node dev/serve.js
 
 `http://localhost:5188` 에 모든 상태·캐릭터·크기 버튼이 있다.
 
-행 폭과 미등록 색 문자 검사 — 한 칸만 어긋나도 얼굴 전체가 밀리는데 눈으로는 잘 안 보인다:
-
-```bash
-node -e "const S=require('./src/sprites');for(const[n,c]of Object.entries(S.CHARACTERS))for(const k of['BODY','BLINK','UP','HAPPY'])c[k].forEach((r,i)=>{if(r.length!==S.GRID_W)throw Error(n+'.'+k+' '+i)});console.log('ok')"
-```
+다 그렸으면 `npm test` 를 돌린다. 행 폭·미등록 색 문자·상태등 위치를 검사한다. 한 칸만 어긋나도 얼굴 전체가 밀리는데 눈으로는 잘 안 보인다.
 
 ## 번역 추가
 
-[`src/i18n.js`](src/i18n.js) 에 모든 문자열이 `{ en: {...}, ko: {...} }` 로 들어 있다. 여기에 언어를 추가하고 `src/main.js` 의 트레이 서브메뉴에 넣으면 끝이다. 언어끼리 키가 일치해야 한다:
+[`src/i18n.js`](src/i18n.js) 에 모든 문자열이 `{ en: {...}, ko: {...} }` 로 들어 있다. 여기에 언어를 추가하고 `src/main.js` 의 트레이 서브메뉴에 넣으면 끝이다. 언어끼리 키와 `{자리표시자}` 가 맞는지는 `npm test` 가 본다.
+
+## 테스트
 
 ```bash
-node -e "const I=require('./src/i18n'),a=require('assert');a.deepStrictEqual(Object.keys(I.STRINGS.en).sort(),Object.keys(I.STRINGS.ko).sort());console.log('ok')"
+npm test
 ```
+
+의존성 없이 Node 내장 러너로 [`test/`](test/) 를 돌린다. 보장하는 것:
+
+| | |
+|---|---|
+| `install-hooks` | 진짜 `~/.claude/settings.json` 을 고쳐 쓰는 코드라 여기가 제일 중요하다. 남의 훅이 살아남는지, 재설치해도 중복되지 않는지, 제거 후 찌꺼기가 없는지, 먼저 백업하는지, JSON 이 깨져 있으면 덮어쓰지 않고 거절하는지. |
+| `state` | 진행률 규칙 — 진행 중 항목은 절반으로 세고, `Stop` 전에는 100% 가 되지 않고, 추정값은 상한이 있고, 세션끼리 서로를 덮어쓰지 않는다. |
+| `sprites` / `i18n` | 격자 폭, 팔레트 누락, 상태등 위치, 키와 자리표시자 일치. |
+| `hook` | 트랜스크립트 파서, 그리고 펫이 꺼져 있거나 입력이 깨져 있어도 0 으로 끝난다는 약속 — 훅이 Claude Code 를 막으면 안 된다. |
+
+훅 테스트는 진짜 설정 파일을 건드리지 않는다. `--project` 로 임시 폴더에만 쓴다.
 
 ## 배포용 빌드
 
@@ -211,7 +220,8 @@ scripts/say.js           상태 수동 주입
 scripts/plan.js          요금제 한도 사용량 주입
 dev/preview.html         브라우저 미리보기
 dev/shots.js             README 이미지 재생성 (Electron + ffmpeg)
-.github/workflows/       태그 -> Windows + macOS 빌드 -> GitHub 릴리스
+test/                    node --test 로 도는 테스트 (npm test)
+.github/workflows/       push 마다 테스트, 태그에서 빌드 -> GitHub 릴리스
 ```
 
 ## 라이선스

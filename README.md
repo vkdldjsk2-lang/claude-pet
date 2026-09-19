@@ -162,19 +162,28 @@ node dev/serve.js
 
 `http://localhost:5188` has buttons for every state, character and size.
 
-Row widths and unknown palette characters — one cell off shifts the whole face, and it's hard to spot by eye:
-
-```bash
-node -e "const S=require('./src/sprites');for(const[n,c]of Object.entries(S.CHARACTERS))for(const k of['BODY','BLINK','UP','HAPPY'])c[k].forEach((r,i)=>{if(r.length!==S.GRID_W)throw Error(n+'.'+k+' '+i)});console.log('ok')"
-```
+Run `npm test` after drawing — it checks row widths, unknown palette characters and the status-light cell. One cell off shifts the whole face and is hard to spot by eye.
 
 ## Translate it
 
-[`src/i18n.js`](src/i18n.js) holds every string as `{ en: {...}, ko: {...} }`. Add a language there, add it to the tray submenu in `src/main.js`, done. Keys have to match across languages:
+[`src/i18n.js`](src/i18n.js) holds every string as `{ en: {...}, ko: {...} }`. Add a language there, add it to the tray submenu in `src/main.js`, done. `npm test` checks that the keys and the `{placeholders}` line up across languages.
+
+## Tests
 
 ```bash
-node -e "const I=require('./src/i18n'),a=require('assert');a.deepStrictEqual(Object.keys(I.STRINGS.en).sort(),Object.keys(I.STRINGS.ko).sort());console.log('ok')"
+npm test
 ```
+
+No dependencies — Node's built-in runner over [`test/`](test/). What's covered:
+
+| | |
+|---|---|
+| `install-hooks` | It rewrites your real `~/.claude/settings.json`, so this is the part worth pinning: other people's hooks survive, reinstalling never duplicates, removing leaves no residue, the file is backed up first, and malformed JSON is refused instead of overwritten. |
+| `state` | The progress rules — in-progress todos count as half, the bar never reaches 100% before `Stop`, the tool-count estimate is capped, and sessions don't overwrite each other. |
+| `sprites` / `i18n` | Grid widths, palette coverage, status-light position, key and placeholder parity. |
+| `hook` | The transcript parser, plus the promise that the hook exits 0 even when the pet is closed or the input is garbage — it must never block Claude Code. |
+
+The hook tests never touch your real settings file: they write to a throwaway directory via `--project`.
 
 ## Build installers
 
@@ -211,7 +220,8 @@ scripts/say.js           push a state by hand
 scripts/plan.js          push plan-limit usage
 dev/preview.html         browser preview
 dev/shots.js             regenerates the README images (Electron + ffmpeg)
-.github/workflows/       tag -> build on Windows + macOS -> GitHub release
+test/                    the suite npm test runs (node --test)
+.github/workflows/       tests on every push; tag -> build -> GitHub release
 ```
 
 ## License
