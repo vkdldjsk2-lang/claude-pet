@@ -46,6 +46,22 @@ Windows · macOS · [English](README.md)
 
 ## 설치
 
+**[⬇ 최신 릴리스 내려받기](https://github.com/vkdldjsk2-lang/claude-pet/releases/latest)** — Node 도 터미널도 필요 없다.
+
+| | |
+|---|---|
+| **Windows** | `ClaudePet-Setup-x.y.z.exe` (설치형) 또는 `ClaudePet-x.y.z-portable.exe` (설치 없이 실행) |
+| **macOS** | `ClaudePet-x.y.z-mac-arm64.dmg` (애플 실리콘) 또는 `-x64.dmg` (인텔) |
+
+그다음: **실행 → 펫이 뜸 → 물어보면 *Claude Code 에 연결* 누르기.** 설정은 이게 전부다.
+
+> 코드 서명을 하지 않아서 첫 실행 때 운영체제가 한 번 경고한다.
+> **Windows:** SmartScreen → *추가 정보* → *실행*.
+> **macOS:** 앱을 우클릭 → *열기* → *열기*. "손상되었다" 고 하면 `xattr -cr "/Applications/Claude Pet.app"` 를 한 번 실행한다.
+
+<details>
+<summary>소스에서 직접 실행하기</summary>
+
 ```bash
 git clone https://github.com/vkdldjsk2-lang/claude-pet.git
 cd claude-pet
@@ -61,17 +77,17 @@ npm run demo
 
 > **Windows:** `Electron failed to install correctly` 가 뜨면 바이너리 압축 해제가 중간에 끊긴 것이다. `node_modules/electron/dist` 를 지우고 `node node_modules/electron/install.js` 를 다시 실행하면 된다.
 
-앱은 트레이(Windows 알림 영역 / macOS 메뉴바)에 상주한다. 아이콘을 누르면 보이기/숨기기, 우클릭하면 항상 위·클릭 통과·캐릭터·크기·언어·종료가 나온다. 펫을 드래그해 원하는 자리에 두면 위치가 저장된다.
+</details>
+
+앱은 트레이(Windows 알림 영역 / macOS 메뉴바)에 상주한다. 아이콘을 누르면 보이기/숨기기, 우클릭하면 항상 위·클릭 통과·캐릭터·크기·언어·로그인 시 자동 실행·종료가 나온다. 펫을 드래그해 원하는 자리에 두면 위치가 저장된다.
 
 ## Claude Code 와 연결
 
-펫은 `127.0.0.1:4577` 에서 기다린다. 훅을 설치하면 Claude Code 가 상태를 밀어준다.
+펫은 `127.0.0.1:4577` 에서 기다리고, Claude Code 가 훅을 통해 상태를 밀어준다.
 
-```bash
-npm run install-hooks
-```
+**트레이 메뉴 → *Claude Code 에 연결*.** 첫 실행 때 앱이 먼저 물어보고, 지금 연결돼 있는지는 트레이에 표시된다(`● Claude Code 따라가는 중`). *Claude Code 연결 해제* 로 되돌린다. 소스로 받았다면 `npm run install-hooks` 도 된다(`npm run uninstall-hooks`, `npm run hook-status`).
 
-`~/.claude/settings.json` 에 훅 7개가 추가된다. 기존 파일은 `settings.json.claude-pet.bak` 로 백업되고, 다른 훅은 건드리지 않는다.
+어느 쪽이든 `~/.claude/settings.json` 에 훅 7개가 추가된다. 기존 파일은 `settings.json.claude-pet.bak` 로 백업되고, 다른 훅은 건드리지 않는다.
 
 | Claude Code 훅 | 펫 이벤트 |
 |---|---|
@@ -164,8 +180,18 @@ node -e "const I=require('./src/i18n'),a=require('assert');a.deepStrictEqual(Obj
 
 ```bash
 npm run dist:win   # NSIS 설치본 + 포터블 exe
-npm run dist:mac   # dmg + zip
+npm run dist:mac   # dmg + zip (arm64 + x64)
 ```
+
+둘 다 빌드 전에 스프라이트에서 `build/icon.png` 를 다시 만든다(`npm run make-icon` — 캐릭터 이름을 넘기면 다른 얼굴로 뽑힌다).
+
+릴리스는 CI 가 만든다. `v*` 태그를 밀면 [`.github/workflows/release.yml`](.github/workflows/release.yml) 이 Windows·macOS 러너에서 빌드해 GitHub 릴리스에 올린다.
+
+```bash
+npm version patch && git push --follow-tags
+```
+
+인증서가 없어서 코드 서명은 하지 않는다. 그래서 첫 실행 때 SmartScreen·Gatekeeper 경고가 한 번 뜬다. 인증서를 넣는다면 워크플로에서 `CSC_IDENTITY_AUTO_DISCOVERY: false` 를 빼고 `CSC_LINK` / `CSC_KEY_PASSWORD` 시크릿을 설정하면 된다.
 
 ## 구조
 
@@ -179,11 +205,13 @@ src/icon.js              의존성 없는 PNG 인코더 (트레이 아이콘 런
 src/preload.js           contextBridge (window.claudePet)
 src/renderer/            캔버스 렌더링, 도트 진행률, 발광 판, 게이지
 scripts/hook.js          Claude Code 훅 -> 펫 브리지
-scripts/install-hooks.js 훅 설치 / 제거
+scripts/install-hooks.js 훅 설치 / 제거 (CLI + 트레이 메뉴가 호출)
+scripts/make-icon.js     스프라이트에서 build/icon.png 생성 (설치 파일 아이콘)
 scripts/say.js           상태 수동 주입
 scripts/plan.js          요금제 한도 사용량 주입
 dev/preview.html         브라우저 미리보기
 dev/shots.js             README 이미지 재생성 (Electron + ffmpeg)
+.github/workflows/       태그 -> Windows + macOS 빌드 -> GitHub 릴리스
 ```
 
 ## 라이선스

@@ -46,6 +46,22 @@ Tray menu → **Character**. Size (×0.75–×1.6) and language (English / 한�
 
 ## Install
 
+**[⬇ Download the latest release](https://github.com/vkdldjsk2-lang/claude-pet/releases/latest)** — no Node, no terminal.
+
+| | |
+|---|---|
+| **Windows** | `ClaudePet-Setup-x.y.z.exe` (installer) or `ClaudePet-x.y.z-portable.exe` (no install) |
+| **macOS** | `ClaudePet-x.y.z-mac-arm64.dmg` (Apple silicon) or `-x64.dmg` (Intel) |
+
+Then: **open it → the pet appears → click *Connect to Claude Code* when it asks.** That's the whole setup.
+
+> The builds aren't code-signed, so the OS will warn you once on first launch.
+> **Windows:** SmartScreen → *More info* → *Run anyway*.
+> **macOS:** right-click the app → *Open* → *Open*. If it says the app is damaged, run `xattr -cr "/Applications/Claude Pet.app"` once.
+
+<details>
+<summary>Run from source instead</summary>
+
 ```bash
 git clone https://github.com/vkdldjsk2-lang/claude-pet.git
 cd claude-pet
@@ -61,17 +77,17 @@ npm run demo
 
 > **Windows:** if you get `Electron failed to install correctly`, the binary unzip was cut short. Delete `node_modules/electron/dist` and run `node node_modules/electron/install.js` again.
 
-The app lives in the tray (Windows notification area / macOS menu bar). Click the icon to show or hide it; right-click for always-on-top, click-through, character, size, language and quit. Drag the pet anywhere — the position sticks.
+</details>
+
+The app lives in the tray (Windows notification area / macOS menu bar). Click the icon to show or hide it; right-click for always-on-top, click-through, character, size, language, *Open at login* and quit. Drag the pet anywhere — the position sticks.
 
 ## Connect it to Claude Code
 
-The pet listens on `127.0.0.1:4577`. Install the hooks and Claude Code pushes its state:
+The pet listens on `127.0.0.1:4577` and Claude Code pushes its state there through hooks.
 
-```bash
-npm run install-hooks
-```
+**Tray menu → *Connect to Claude Code*.** The app offers this on first launch and the tray shows which way it stands (`● Following Claude Code`). *Disconnect from Claude Code* undoes it. From a source checkout you can also run `npm run install-hooks` (`npm run uninstall-hooks`, `npm run hook-status`).
 
-This adds seven hooks to `~/.claude/settings.json`. Your existing file is backed up to `settings.json.claude-pet.bak`, and other hooks are left alone.
+Either way this adds seven hooks to `~/.claude/settings.json`. Your existing file is backed up to `settings.json.claude-pet.bak`, and other hooks are left alone.
 
 | Claude Code hook | Pet event |
 |---|---|
@@ -164,8 +180,18 @@ node -e "const I=require('./src/i18n'),a=require('assert');a.deepStrictEqual(Obj
 
 ```bash
 npm run dist:win   # NSIS installer + portable exe
-npm run dist:mac   # dmg + zip
+npm run dist:mac   # dmg + zip (arm64 + x64)
 ```
+
+Both regenerate `build/icon.png` from the sprite first (`npm run make-icon` — pass a character name to use a different face).
+
+Releases are cut by CI: push a `v*` tag and [`.github/workflows/release.yml`](.github/workflows/release.yml) builds on Windows and macOS runners and uploads to the GitHub release.
+
+```bash
+npm version patch && git push --follow-tags
+```
+
+Nothing is code-signed — there are no certificates — so the binaries trip SmartScreen and Gatekeeper once. If you add certs, drop `CSC_IDENTITY_AUTO_DISCOVERY: false` from the workflow and set the usual `CSC_LINK` / `CSC_KEY_PASSWORD` secrets.
 
 ## Layout
 
@@ -179,11 +205,13 @@ src/icon.js              dependency-free PNG encoder (tray icon, built at runtim
 src/preload.js           contextBridge (window.claudePet)
 src/renderer/            canvas rendering, dot progress, glowing sign, gauges
 scripts/hook.js          Claude Code hook -> pet bridge
-scripts/install-hooks.js hook install / remove
+scripts/install-hooks.js hook install / remove (CLI + the tray menu calls it)
+scripts/make-icon.js     build/icon.png from the sprite, for the installers
 scripts/say.js           push a state by hand
 scripts/plan.js          push plan-limit usage
 dev/preview.html         browser preview
 dev/shots.js             regenerates the README images (Electron + ffmpeg)
+.github/workflows/       tag -> build on Windows + macOS -> GitHub release
 ```
 
 ## License

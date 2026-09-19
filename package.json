@@ -1,18 +1,21 @@
 {
   "name": "claude-pet",
   "version": "1.0.0",
-  "description": "Claude Code 데스크톱 펫 - 머리 위 도트 진행률, 코딩 중 타이핑, 완료 시 빛나는 메시지",
+  "description": "A desktop pet that follows what Claude Code is doing",
   "main": "src/main.js",
-  "author": "vkdldjsk2-lang",
+  "author": "Youngjun-CHOI",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
     "demo": "electron . --demo",
+    "test": "node scripts/hook.js --selftest",
     "install-hooks": "node scripts/install-hooks.js",
     "uninstall-hooks": "node scripts/install-hooks.js --remove",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
-    "dist:mac": "electron-builder --mac"
+    "hook-status": "node scripts/install-hooks.js --status",
+    "make-icon": "node scripts/make-icon.js",
+    "dist": "npm run make-icon && electron-builder",
+    "dist:win": "npm run make-icon && electron-builder --win",
+    "dist:mac": "npm run make-icon && electron-builder --mac"
   },
   "devDependencies": {
     "electron": "^33.2.0",
@@ -21,30 +24,75 @@
   "build": {
     "appId": "com.claudepet.app",
     "productName": "Claude Pet",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
     "files": [
       "src/**/*",
       "scripts/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "scripts/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "vkdldjsk2-lang",
+        "repo": "claude-pet",
+        "releaseType": "release"
+      }
+    ],
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Claude Pet",
+      "artifactName": "ClaudePet-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "ClaudePet-${version}-portable.${ext}"
     },
     "mac": {
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64", "x64"]
+        }
       ],
       "category": "public.app-category.developer-tools",
       "extendInfo": {
         "LSUIElement": true
-      }
+      },
+      "identity": null,
+      "artifactName": "ClaudePet-${version}-mac-${arch}.${ext}"
     },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+    "dmg": {
+      "artifactName": "ClaudePet-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Development",
+      "artifactName": "ClaudePet-${version}-linux-${arch}.${ext}"
     }
   },
   "repository": {

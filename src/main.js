@@ -1,7 +1,8 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell, clipboard } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, shell, clipboard, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
+const hooks = require('../scripts/install-hooks');
 const { startServer, DEFAULT_PORT } = require('./server');
 const { createStore } = require('./state');
 const { makeIconPNG } = require('./icon');
@@ -11,12 +12,14 @@ const { t, fromLocale } = require('./i18n');
 const WIN_W = 320;
 const WIN_H = 320;
 const SCALES = [['sizeS', 0.75], ['sizeM', 1], ['sizeL', 1.3], ['sizeXL', 1.6]];
+const README_URL = 'https://github.com/vkdldjsk2-lang/claude-pet#readme';
 
 let win = null;
 let tray = null;
 let store = null;
 let activePort = null;
 let demoTimer = null;
+let hookState = { installed: 0, total: 0 };
 
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 
@@ -171,8 +174,18 @@ function buildTray() {
 
 function refreshTrayMenu() {
   const s = loadSettings();
+  const connected = hookState.installed > 0;
   const menu = Menu.buildFromTemplate([
     { label: activePort ? T('trayPort', { port: activePort }) : T('trayNoPort'), enabled: false },
+    { label: connected ? T('hookOn') : T('hookOff'), enabled: false },
+    { type: 'separator' },
+    { label: connected ? T('disconnect') : T('connect'), click: () => toggleHooks(connected) },
+    {
+      label: T('openAtLogin'),
+      type: 'checkbox',
+      checked: openAtLogin(),
+      click: (item) => setOpenAtLogin(item.checked),
+    },
     { type: 'separator' },
     { label: T('showHide'), click: () => toggleWindow() },
     {
@@ -221,6 +234,7 @@ function refreshTrayMenu() {
     { type: 'separator' },
     { label: T('demo'), click: () => runDemo() },
     { label: T('copyHookCmd'), click: () => copyHookCommand() },
+    { label: T('help'), click: () => shell.openExternal(README_URL) },
     { type: 'separator' },
     { label: T('quit'), click: () => { app.isQuitting = true; app.quit(); } },
   ]);
@@ -233,9 +247,89 @@ function toggleWindow() {
   else win.show();
 }
 
+/** 설치된 훅 개수를 다시 읽어 트레이 메뉴 문구를 맞춘다 */
+function refreshHookState() {
+  try {
+    hookState = hooks.status();
+  } catch {
+    hookState = { installed: 0, total: 0 };
+  }
+}
+
+/**
+ * 트레이에서 바로 Claude Code 훅을 설치/제거한다.
+ * 일반 사용자가 터미널을 열지 않아도 되도록 하는 것이 이 앱 설치의 핵심이라,
+ * 결과는 성공이든 실패든 대화상자로 분명히 알려 준다.
+ */
+function toggleHooks(remove) {
+  const r = hooks.apply({ remove });
+  refreshHookState();
+  refreshTrayMenu();
+
+  if (!r.ok) {
+    dialog.showMessageBox({
+      type: 'error',
+      title: T('connectFailTitle'),
+      message: T('connectFailTitle'),
+      detail: `${r.error}\n\n${T('settingsFile', { file: r.file })}`,
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  const lines = [T(remove ? 'connectOffBody' : 'connectOkBody')];
+  if (!remove && r.runtime === 'electron') lines.push(T('hookedVia'));
+  lines.push(T('settingsFile', { file: r.file }));
+
+  dialog.showMessageBox({
+    type: 'info',
+    title: T(remove ? 'connectOffTitle' : 'connectOkTitle'),
+    message: T(remove ? 'connectOffTitle' : 'connectOkTitle'),
+    detail: lines.join('\n\n'),
+    buttons: ['OK'],
+  });
+}
+
+function openAtLogin() {
+  try {
+    return app.getLoginItemSettings().openAtLogin;
+  } catch {
+    return false;
+  }
+}
+
+function setOpenAtLogin(on) {
+  try {
+    app.setLoginItemSettings({ openAtLogin: !!on, args: [] });
+  } catch { /* 일부 리눅스 환경에서는 지원하지 않는다 */ }
+  refreshTrayMenu();
+}
+
+/** 개발자용 탈출구: 앱 밖에서 직접 돌릴 수 있는 설치 명령을 클립보드에 넣는다 */
 function copyHookCommand() {
-  const dir = app.isPackaged ? path.dirname(app.getPath('exe')) : app.getAppPath();
-  clipboard.writeText(`node "${path.join(dir, 'scripts', 'install-hooks.js')}"`);
+  clipboard.writeText(`node "${hooks.hookPath().replace(/hook\.js$/, 'install-hooks.js')}"`);
+}
+
+/**
+ * 첫 실행이고 훅이 없으면 한 번만 연결을 권한다.
+ * 설치 직후 "펫은 떴는데 아무 반응이 없다" 로 끝나지 않게 하는 안내다.
+ */
+function offerFirstRunConnect() {
+  if (loadSettings().welcomed || hookState.installed > 0) return;
+  saveSettings({ welcomed: true });
+
+  // showMessageBoxSync 는 메인 프로세스를 통째로 멈춰서 펫과 이벤트 서버까지 함께 멎는다.
+  dialog.showMessageBox({
+    type: 'question',
+    title: 'Claude Pet',
+    message: T('firstRunTitle'),
+    detail: T('firstRunBody'),
+    buttons: [T('connect'), T('later')],
+    defaultId: 0,
+    cancelId: 1,
+  }).then(({ response }) => {
+    if (response === 0) toggleHooks(false);
+  });
 }
 
 /** 상태 전환을 순서대로 재생해 동작을 눈으로 확인한다 */
@@ -287,10 +381,12 @@ if (!app.requestSingleInstanceLock()) {
       } catch { /* 포트 파일은 편의 기능일 뿐이다 */ }
     }
 
+    refreshHookState();
     createWindow();
     buildTray();
 
     if (process.argv.includes('--demo')) setTimeout(runDemo, 1200);
+    else setTimeout(offerFirstRunConnect, 1500);
   });
 
   app.on('window-all-closed', (e) => { e.preventDefault(); });
