@@ -13,8 +13,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 설치 훅은 경로 구분자와 홈 디렉터리 모양을 타므로 양쪽에서 돌린다
-        os: [ubuntu-latest, windows-latest]
+        # 설치 훅은 경로 구분자와 임시·홈 디렉터리 모양을 탄다.
+        # macOS 는 릴리스 빌드도 여기서 도니(같은 npm test) 반드시 포함한다.
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
